@@ -7,29 +7,6 @@ from langchain.schema.runnable import RunnablePassthrough
 from crewai import Crew, Agent, Task
 import json
 
-# Assuming JSON data as a string. In reality, it could be read from a file or obtained from another source.
-json_data = '''
-{
-    "agents": [{
-        "name": "Financial Analyst",
-        "role": "The Best Financial Analyst",
-        "goal": "Impress all customers with your financial data and market trends analysis",
-        "backstory": "The most seasoned financial analyst with lots of expertise in stock market analysis and investment strategies that is working for a super important customer.",
-        "verbose": true,
-        "tools": [
-            "BrowserTools.scrape_and_summarize_website",
-            "SearchTools.search_internet",
-            "CalculatorTools.calculate",
-            "SECTools.search_10q",
-            "SECTools.search_10k"
-        ]
-    }],
-    "tasks": [{
-        "description": "Collect and summarize recent news articles, press releases, and market analyses related to the stock and its industry. Pay special attention to any significant events, market sentiments, and analysts' opinions. Also include upcoming events like earnings and others. Your final answer MUST be a report that includes a comprehensive summary of the latest news, any notable shifts in market sentiment, and potential impacts on the stock. Also make sure to return the stock ticker. Make sure to use the most recent data as possible. Selected company by the customer: {company}",
-        "agent": "Financial Analyst"
-    }]
-}
-'''
 
 from calculator_tools import CalculatorTools
 from search_tools import SearchTools
