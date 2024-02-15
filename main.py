@@ -1,3 +1,5 @@
+from typing import Any, Dict, Optional
+from uuid import UUID
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema.output_parser import StrOutputParser
@@ -7,6 +9,8 @@ from langchain.schema.runnable import RunnablePassthrough
 # Importing necessary modules for integration with CrewAI.
 from crewai import Crew, Agent, Task
 import json
+
+from langchain_core.agents import AgentAction, AgentFinish
 
 
 from calculator_tools import CalculatorTools
@@ -25,9 +29,53 @@ tools_by_name = {
     "CalculatorTools.calculate": CalculatorTools.calculate,
 }
 
+
+from crewai.agents.tools_handler import ToolsHandler
+from crewai.agents.cache.cache_handler import CacheHandler
+
+class CustomToolsHandler(ToolsHandler):
+    handler: Any = None
+    agent: Agent = None
+
+    def __init__(self, handler: Any, cache_handler: CacheHandler, agent: Agent, **kwargs: Any):
+        super().__init__(cache=cache_handler, **kwargs)        
+        self.handler = handler
+        self.agent = agent
+
+    async def on_agent_finish(self, finish: AgentFinish, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any) -> Any:
+        return super().on_agent_finish(finish, run_id=run_id, parent_run_id=parent_run_id, **kwargs)
+    
+    async def on_agent_action(self, action: AgentAction, *, run_id: UUID, parent_run_id: UUID | None = None, **kwargs: Any) -> Any:
+        await self.handler['callbacks'][0].send_log(f"Agent: {self.agent.role}\nTool: {action.messages}")
+        return super().on_agent_action(action, run_id=run_id, parent_run_id=parent_run_id, **kwargs)
+    
+    async def on_tool_start(self, serialized: Dict[str, Any], input_str: str, **kwargs: Any) -> Any:
+        super().on_tool_start(serialized, input_str, **kwargs)
+
+        tool_name = serialized.get("name")
+    
+        await self.handler['callbacks'][0].send_log(f"Agent: {self.agent.role}\nTool: {tool_name}\nInput: {input_str}")
+
+    async def on_tool_end(self, output: str, **kwargs: Any) -> Any:
+        super().on_tool_end(output, **kwargs)
+        await self.handler['callbacks'][0].send_log(f"Tool Output: {output}")
+
+class CustomAgent(Agent):
+
+    handler: Any = None
+
+    def __init__(self, handler: Any, **kwargs):
+        super().__init__(**kwargs)
+        self.handler = handler
+
+    def set_cache_handler(self, cache_handler) -> None:
+        super().set_cache_handler(cache_handler)
+   
+        self.tools_handler = CustomToolsHandler(handler=self.handler, cache_handler=cache_handler, agent=self)
+
 def create_crew_from_json(json_data):
     # Converting JSON string to a Python dictionary
-    data = json_data #json.loads(json_data)
+    data = json.loads(json_data)
 
     # Creating agent and task instances
     agents = []
@@ -38,14 +86,36 @@ def create_crew_from_json(json_data):
 
         tools = [tools_by_name[tool_name] for tool_name in agent_data['tools']]
 
-        agent = Agent(
+        custom_handler = None
+        if var:
+            try:
+                custom_handler = var.get()
+                
+                #custom_handler = CustomToolsHandler(handler=websocketHandler, agent=agent)
+
+            except Exception as e:
+                print(f"Failed to get websocketHandler: {str(e)}")
+                custom_handler = None
+
+        #llm = ChatOpenAI(model="gpt-3.5-turbo-16k", callbacks=[custom_handler])
+
+        agent = CustomAgent(
+            
+            handler=custom_handler,
             allow_delegation=True,
             role=agent_data['role'],
             goal=agent_data['goal'],
             backstory=agent_data['backstory'],
             verbose=True,
-            tools=tools  # In actual implementation, tools may need to be converted to appropriate objects.
+            tools=tools,  # In actual implementation, tools may need to be converted to appropriate objects.
+            
+            #llm=llm   # causes token limits occasionally 
         )
+
+        #agent.custom_handler=custom_handler
+
+
+
         agents.append(agent)
         agent_by_name[agent_data['name']] = agent  # Mapping agent name to agent object
 
@@ -71,9 +141,10 @@ prompt_template = """
     It mainly consists of the configuration of Agents and the Tasks each Agent performs. And divide the Tasks so that each Agent can deal with problems in their expertise area by passing work among themselves.
     The definition of tools that each Agent can use is as follows: SearchTools.search_internet, SearchTools.search_internal_documents, CalculatorTools.calculate
     Since the Tasks will be executed sequentially, they must be defined in order.
-    At the end of each task descriptions, please add the result MUST be written in Korean language.
+    the result MUST be written in Korean language.
 
-    The resulting json will be as follows:
+
+    The resulting json will be as follows (Please use VALID JSON with double-quoted for key and value):
     ```
     {{
         "agents":[{{
@@ -99,13 +170,13 @@ prompt_template = """
 prompt = ChatPromptTemplate.from_template(prompt_template)
 
 # Setting up the OpenAI model
-model = ChatOpenAI(model="gpt-3.5-turbo")
+model = ChatOpenAI(model="gpt-3.5-turbo", callbacks=[])
 
 
 # Replace the StrOutputParser instance with JSONOutputParser
-output_parser = SimpleJsonOutputParser()
+#output_parser = SimpleJsonOutputParser()
 # Setting up the output parser
-#output_parser = StrOutputParser()
+output_parser = StrOutputParser()
 
 # Defining a function to execute CrewAI kickoff
 def execute_crew_kickoff(crew_config):

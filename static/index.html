@@ -4,6 +4,37 @@
     <meta charset="UTF-8">
     <title>WebSocket Test</title>
     <script>
+
+        function convertAgentsAndTasksToHtml(agentsInfo) {
+            const { agents, tasks } = agentsInfo;
+            let htmlContent = '<h1>Agents</h1>';
+
+            agents.forEach(agent => {
+                htmlContent += `
+                <div class="agent">
+                    <h2>${agent.name}</h2>
+                    <p><strong>Role:</strong> ${agent.role}</p>
+                    <p><strong>Goal:</strong> ${agent.goal}</p>
+                    <p><strong>Backstory:</strong> ${agent.backstory}</p>
+                    <p><strong>Tools:</strong> ${agent.tools.join(', ')}</p>
+                </div>
+                `;
+            });
+
+            htmlContent += '<h1>Tasks</h1>';
+
+            tasks.forEach(task => {
+                htmlContent += `
+                <div class="task">
+                    <p>${task.description}</p>
+                    <p><strong>Assigned to:</strong> ${task.agent}</p>
+                </div>
+                `;
+            });
+
+            return htmlContent;
+        }
+
         document.addEventListener("DOMContentLoaded", function() {
             // 웹소켓 연결 생성
             var ws = new WebSocket("ws://localhost:6789");
@@ -27,8 +58,27 @@
                 if (event.data.startsWith("Chain started with inputs: ")) {
                     log.innerHTML += "Running... <br>";
                 }else{
-                    var formattedMessage = event.data.replace(/\n/g, "<br>");
-                    log.innerHTML += "Received: " + formattedMessage + "<br>";
+
+                    if (event.data.includes("{'text': ") || event.data.includes("You are a tool for") || event.data.includes("{'topic'")) {
+                        console.log(event.data);
+                    } else if (event.data.includes("Prompt after formatting:")) {
+                        var summaryIndex = event.data.indexOf("Current summary:");
+                        if (summaryIndex !== -1) {
+                            var summaryText = event.data.substring(summaryIndex).replace(/\n/g, "<br>");
+                            log.innerHTML += summaryText + "<br>";
+                        }
+                    } else if (event.data.includes('"agents":')) {
+                        try {
+                            var data = JSON.parse(event.data);
+                            var html = convertAgentsAndTasksToHtml(data);
+                            log.innerHTML += html;
+                        } catch (e) {
+                            console.error("Error parsing JSON:", e);
+                        }
+                    } else {
+                        var formattedMessage = event.data.replace(/\n/g, "<br>");
+                        log.innerHTML += "Received: " + formattedMessage + "<br>";
+                    }
 
                 }
 

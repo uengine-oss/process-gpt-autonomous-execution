@@ -1,10 +1,11 @@
 import asyncio
+from uuid import UUID
 import websockets
 from main import create_chain
 from langchain.callbacks import StdOutCallbackHandler
-from typing import Dict, Any, Union, Optional
+from typing import Dict, Any, List, Union, Optional
 from main import get_config_context_var
-
+from langchain_core.agents import AgentAction, AgentFinish
 
 
 # 세션별 체인 실행 상태를 관리하기 위한 딕셔너리
@@ -51,9 +52,39 @@ class WebSocketCallbackHandler(StdOutCallbackHandler):
 
     async def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> Any:
         try:
-            await self.send_log(f"Chain ended with outputs: {outputs['kwargs']['messages'][0]['kwargs']['content']}")
+            await self.send_log(f"{outputs['kwargs']['messages'][0]['kwargs']['content']}")
         except:
-            await self.send_log(f"Chain ended with outputs: {outputs}")
+            try:
+                await self.send_log(f"{outputs['text']}")
+            except:
+                await self.send_log(f"{outputs}")
+
+    async def on_agent_action(
+        self, action: AgentAction, color: Optional[str] = None, **kwargs: Any
+    ) -> Any:
+        """Run on agent action."""
+        await self.send_log(f"{action.log}")
+
+    def on_agent_finish(self, finish: AgentFinish, color: str | None = None, **kwargs: Any) -> None:
+        return super().on_agent_finish(finish, color, **kwargs)
+    
+    def on_tool_start(self, serialized: Dict[str, Any], input_str: str, *, run_id: UUID, parent_run_id: UUID | None = None, tags: List[str] | None = None, metadata: Dict[str, Any] | None = None, inputs: Dict[str, Any] | None = None, **kwargs: Any) -> Any:
+        return super().on_tool_start(serialized, input_str, run_id=run_id, parent_run_id=parent_run_id, tags=tags, metadata=metadata, inputs=inputs, **kwargs)
+    
+
+    async def on_tool_end(
+        self,
+        output: str,
+        color: Optional[str] = None,
+        observation_prefix: Optional[str] = None,
+        llm_prefix: Optional[str] = None,
+        **kwargs: Any,
+    ) -> None:
+        """If not the final action, print out observation."""
+        if observation_prefix is not None:
+            await self.send_log(f"{observation_prefix}")
+        await self.send_log(output, color=color or self.color)
+
 
     async def on_text(
         self,
@@ -65,7 +96,7 @@ class WebSocketCallbackHandler(StdOutCallbackHandler):
         await self.send_log(f"{text}")
 
     async def on_chain_error(self, error: Union[Exception, KeyboardInterrupt], **kwargs: Any) -> Any:
-        await self.send_log(f"Chain encountered an error: {error}")
+        await self.send_log(f"{error}")
 
 
 
