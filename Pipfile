@@ -20,6 +20,7 @@ langchain-experimental = "*"
 duckduckgo-search = "*"
 install = "*"
 numexpr = "*"
+websockets = "*"
 
 [dev-packages]
 

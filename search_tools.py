@@ -6,6 +6,32 @@ from langchain.tools import tool
 
 
 class SearchTools():
+
+  @tool("Search Internal Documents")
+  def search_internal_documents(query):
+    """Useful to search internal documents based on a given query and return relevant results"""
+    url = "http://localhost:8005/retrieve"
+    payload = json.dumps({"query": query})
+    headers = {
+        'content-type': 'application/json'
+    }
+    response = requests.request("POST", url, headers=headers, data=payload)
+    results = response.json()
+    string = []
+    for item in results:
+        node = item['node']
+        metadata = node['metadata']
+        content = node['text']
+        metadata_str = '\n'.join([f"{key}: {value}" for key, value in metadata.items()])
+        string.append('\n'.join([
+            metadata_str,
+            "Content:",
+            content,
+            "\n-----------------"
+        ]))
+
+    return '\n'.join(string)
+
   @tool("Search the internet")
   def search_internet(query):
     """Useful to search the internet 

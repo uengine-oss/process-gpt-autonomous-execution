@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket Test</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // 웹소켓 연결 생성
+            var ws = new WebSocket("ws://localhost:6789");
+            var log = document.getElementById("log");
+
+            ws.onopen = function() {
+                log.innerHTML += "Connection established<br>";
+            };
+
+            ws.onmessage = function(event) {
+                // if (event.data.startsWith("Chain ended with outputs: ")) {
+                //     var rawData = event.data.replace("Chain ended with outputs: ", "");
+                //     try {
+                //         var jsonData = JSON.parse(rawData);
+                //         console.log("Parsed JSON:", jsonData);
+                //     } catch (e) {
+                //         console.error("Error parsing JSON:", e);
+                //     }
+                // }else
+
+                if (event.data.startsWith("Chain started with inputs: ")) {
+                    log.innerHTML += "Running... <br>";
+                }else{
+                    var formattedMessage = event.data.replace(/\n/g, "<br>");
+                    log.innerHTML += "Received: " + formattedMessage + "<br>";
+
+                }
+
+            };
+
+            ws.onclose = function() {
+                log.innerHTML += "Connection closed<br>";
+            };
+
+            // 메시지 전송 함수
+            function sendMessage() {
+                var message = document.getElementById("message").value;
+                ws.send(message);
+                log.innerHTML += "Sent: " + message + "<br>";
+            }
+
+            // Send 버튼에 이벤트 리스너 추가
+            document.getElementById("send").addEventListener("click", sendMessage);
+        });
+    </script>
+</head>
+<body>
+    <h2>WebSocket Test</h2>
+    <input type="text" id="message" placeholder="Enter message">
+    <button id="send">Send</button>
+    <div id="log" style="margin-top: 20px; border: 1px solid #ccc; padding: 10px;"></div>
+</body>
+</html>
