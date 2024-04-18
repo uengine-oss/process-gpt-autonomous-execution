@@ -57,7 +57,10 @@ class WebSocketCallbackHandler(StdOutCallbackHandler):
             try:
                 await self.send_log(f"{outputs['text']}")
             except:
-                await self.send_log(f"{outputs}")
+                try:
+                    await self.send_log(f"{outputs['return_values']}")
+                except:
+                    await self.send_log(f"{outputs}")
 
     async def on_agent_action(
         self, action: AgentAction, color: Optional[str] = None, **kwargs: Any

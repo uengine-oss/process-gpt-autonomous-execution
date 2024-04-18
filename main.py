@@ -125,7 +125,8 @@ def create_crew_from_json(json_data):
 
         task = Task(
             description=task_data['description']+ ". The result MUST be written in Korean language.",
-            agent=assigned_agent
+            agent=assigned_agent,
+            expected_output="사용자의 요구 사항에 맞는 적절한 결과"
         )
         tasks.append(task)
 
@@ -142,6 +143,7 @@ prompt_template = """
     The definition of tools that each Agent can use is as follows: SearchTools.search_internet, SearchTools.search_internal_documents, CalculatorTools.calculate
     Since the Tasks will be executed sequentially, they must be defined in order.
     the result MUST be written in Korean language.
+    All results must be generated in JSON format with key values(as valid JSON using double quotes around keys and values).
 
 
     The resulting json will be as follows (Please use VALID JSON with double-quoted for key and value):
