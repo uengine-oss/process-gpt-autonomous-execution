@@ -15,6 +15,7 @@ from langchain_core.agents import AgentAction, AgentFinish
 
 from calculator_tools import CalculatorTools
 from search_tools import SearchTools
+from powerpoint_tools import PowerpointTools
 
 from contextvars import ContextVar
 
@@ -27,6 +28,7 @@ tools_by_name = {
     "SearchTools.search_internet": SearchTools.search_internet,
     "SearchTools.search_internal_documents": SearchTools.search_internal_documents,
     "CalculatorTools.calculate": CalculatorTools.calculate,
+    "PowerpointTools.generate_slide": PowerpointTools.generate_slide
 }
 
 
@@ -89,9 +91,9 @@ def create_crew_from_json(json_data):
         custom_handler = None
         if var:
             try:
-                custom_handler = var.get()
+                websocketHandler = var.get()
                 
-                #custom_handler = CustomToolsHandler(handler=websocketHandler, agent=agent)
+                custom_handler = CustomToolsHandler(handler=websocketHandler, agent=agent)
 
             except Exception as e:
                 print(f"Failed to get websocketHandler: {str(e)}")
@@ -134,13 +136,13 @@ def create_crew_from_json(json_data):
     crew = Crew(agents=agents, tasks=tasks)
     return crew
 
-# Preparing the prompt
+# if you have running memento server, add "SearchTools.search_internal_documents" to the end of tool definitions.  PowerpointTools.generate_slide
 prompt_template = """
     You are a tool for creating configurations for an Agent framework called CrewAI.
 
     To achieve a certain Goal, multiple Agents will collaborate to solve problems. Therefore, divide the necessary expertise areas to solve the problem with at least two or more Agent if possible.
     It mainly consists of the configuration of Agents and the Tasks each Agent performs. And divide the Tasks so that each Agent can deal with problems in their expertise area by passing work among themselves.
-    The definition of tools that each Agent can use is as follows: SearchTools.search_internet, SearchTools.search_internal_documents, CalculatorTools.calculate
+    The definition of tools that each Agent can use is as follows: SearchTools.search_internet, CalculatorTools.calculate, SearchTools.search_internal_documents, PowerpointTools.generate_slide
     Since the Tasks will be executed sequentially, they must be defined in order.
     the result MUST be written in Korean language.
     All results must be generated in JSON format with key values(as valid JSON using double quotes around keys and values).
@@ -218,7 +220,7 @@ def create_chain():
 
 if __name__ == "__main__":
     chain = create_chain()
-    chain.invoke({"topic": "클라우드 네이티브 앱을 정부에 적용할 제안서"})
+    chain.invoke({"topic": "클라우드 네이티브 앱을 정부에 적용할 제안서를 파워포인트로 작성해"})
 #    chain.invoke({"topic": "오픈 AI 에 대한 투자 의견서. 내부 문서도 참고하고 ."})
 
 

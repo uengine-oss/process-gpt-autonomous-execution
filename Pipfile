@@ -21,6 +21,8 @@ duckduckgo-search = "*"
 install = "*"
 numexpr = "*"
 websockets = "*"
+python-pptx = "*"
+langchainhub = "*"
 
 [dev-packages]
 
