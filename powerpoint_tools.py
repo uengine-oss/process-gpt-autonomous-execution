@@ -72,6 +72,9 @@ class PowerpointTools():
             slides = [slides]  # Convert single SlideModel instance to list for iteration
 
         for slide in slides:
+            if isinstance(slide, dict):
+                slide = SlideModel(**slide)
+
             slide_layout = prs.slide_layouts[1]
             new_slide = prs.slides.add_slide(slide_layout)
             
