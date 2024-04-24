@@ -6,7 +6,7 @@ from langchain.callbacks import StdOutCallbackHandler
 from typing import Dict, Any, List, Union, Optional
 from main import get_config_context_var
 from langchain_core.agents import AgentAction, AgentFinish
-
+import os
 
 # 세션별 체인 실행 상태를 관리하기 위한 딕셔너리
 session_chains = {}
@@ -17,20 +17,24 @@ async def server(websocket, path):
     print(f"New session: {session_id}")
 
     async for message in websocket:
-        # 세션별 체인 실행 로직
-        callback_handler = WebSocketCallbackHandler(websocket)
-        chain = create_chain()
-        
-        config = {
-            "callbacks": [callback_handler]
-        }
+        if message.startswith("request_file:"):
+            filename = message.split(":", 1)[1]
+            await send_file(websocket, f"output/{filename}")
+        else:
+            # 세션별 체인 실행 로직
+            callback_handler = WebSocketCallbackHandler(websocket)
+            chain = create_chain()
+            
+            config = {
+                "callbacks": [callback_handler]
+            }
 
-        # 컨텍스트 변수 생성
-        var = get_config_context_var()
-        var.set(config)
+            # 컨텍스트 변수 생성
+            var = get_config_context_var()
+            var.set(config)
 
-
-        await chain.ainvoke({"topic": message}, config=config)
+            await chain.ainvoke({"topic": message}, config=config)
+        # 체인 실행 결과를 클라이언트에게 전송
         # 체인 실행 결과를 클라이언트에게 전송
         # await websocket.send(f"Chain started for session {session_id} with topic: {message}")
 
@@ -100,6 +104,18 @@ class WebSocketCallbackHandler(StdOutCallbackHandler):
 
     async def on_chain_error(self, error: Union[Exception, KeyboardInterrupt], **kwargs: Any) -> Any:
         await self.send_log(f"{error}")
+
+import asyncio
+
+async def send_file(websocket, filepath):
+    if os.path.exists(filepath):
+        # 파일을 비동기적으로 읽기 위해 run_in_executor를 사용합니다.
+        loop = asyncio.get_event_loop()
+        with open(filepath, "rb") as file:
+            data = await loop.run_in_executor(None, file.read)
+            await websocket.send(data)  # 파일 데이터를 WebSocket을 통해 전송합니다.
+    else:
+        await websocket.send("File not found.")
 
 
 
