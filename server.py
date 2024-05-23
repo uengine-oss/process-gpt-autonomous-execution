@@ -37,8 +37,8 @@ async def server(websocket, path):
         # 체인 실행 결과를 클라이언트에게 전송
         # 체인 실행 결과를 클라이언트에게 전송
         # await websocket.send(f"Chain started for session {session_id} with topic: {message}")
-
 start_server = websockets.serve(server, "localhost", 6789)
+# start_server = websockets.serve(server, "autonomous.process-gpt.io", 6789)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 
@@ -105,14 +105,10 @@ class WebSocketCallbackHandler(StdOutCallbackHandler):
     async def on_chain_error(self, error: Union[Exception, KeyboardInterrupt], **kwargs: Any) -> Any:
         await self.send_log(f"{error}")
 
-import asyncio
-
 async def send_file(websocket, filepath):
     if os.path.exists(filepath):
-        # 파일을 비동기적으로 읽기 위해 run_in_executor를 사용합니다.
-        loop = asyncio.get_event_loop()
         with open(filepath, "rb") as file:
-            data = await loop.run_in_executor(None, file.read)
+            data = await file.read()  # 파일을 비동기적으로 읽습니다.
             await websocket.send(data)  # 파일 데이터를 WebSocket을 통해 전송합니다.
     else:
         await websocket.send("File not found.")

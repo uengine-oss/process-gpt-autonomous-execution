@@ -38,6 +38,7 @@
         document.addEventListener("DOMContentLoaded", function() {
             // 웹소켓 연결 생성
             var ws = new WebSocket("ws://localhost:6789");
+            // var ws = new WebSocket("ws://autonomous.process-gpt.io:6789");
             var log = document.getElementById("log");
 
             ws.onopen = function() {
