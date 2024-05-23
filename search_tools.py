@@ -10,8 +10,8 @@ class SearchTools():
   @tool("Search Internal Documents")
   def search_internal_documents(query):
     """Useful to search internal documents based on a given query and return relevant results"""
-    url = "http://localhost:8005/retrieve"
-    # url = "http://memento.process-gpt.io/retrieve"
+    # url = "http://localhost:8005/retrieve"
+    url = "http://memento.process-gpt.io/retrieve"
     payload = json.dumps({"query": query})
     headers = {
         'content-type': 'application/json'
