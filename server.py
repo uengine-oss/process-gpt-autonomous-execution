@@ -38,8 +38,8 @@ async def server(websocket, path):
         # 체인 실행 결과를 클라이언트에게 전송
         # await websocket.send(f"Chain started for session {session_id} with topic: {message}")
 
-start_server = websockets.serve(server, "localhost", 6789)
-# start_server = websockets.serve(server, "0.0.0.0", 6789)
+# start_server = websockets.serve(server, "localhost", 6789)
+start_server = websockets.serve(server, "0.0.0.0", 6789)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 
