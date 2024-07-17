@@ -1,11 +1,11 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
 COPY . /app
 
-RUN pip install pipenv
-RUN pipenv install --deploy --ignore-pipfile
+RUN pip install --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 6789
-CMD ["pipenv", "run", "python", "server.py"]
+CMD ["python", "server.py"]
